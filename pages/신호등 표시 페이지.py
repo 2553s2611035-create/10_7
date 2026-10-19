@@ -2,23 +2,20 @@ import streamlit as st
 import datetime
 import time
 
-# 1. 페이지 기본 설정
+# 페이지 기본 설정
 st.set_page_config(
     page_title="SafeWalk - 학교 앞 신호등",
     page_icon="🚦",
     layout="wide"
 )
 
-# 2. 이미지 디자인 기반 커스텀 CSS (파스텔 핑크 테마 & 둥근 카드 UI)
+# 이미지 디자인 기반 커스텀 CSS (파스텔 핑크 테마 & 둥근 카드 UI)
 st.markdown("""
 <style>
-    /* 전체 배경 파스텔 톤 지정 */
     .stApp {
         background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 100%);
         font-family: 'Pretendard', sans-serif;
     }
-    
-    /* 타이틀 및 헤더 스타일링 */
     .main-header {
         text-align: center;
         padding: 20px 0 10px 0;
@@ -28,15 +25,12 @@ st.markdown("""
         font-size: 2.5rem;
         font-weight: 800;
         margin-bottom: 5px;
-        letter-spacing: -1px;
     }
     .sub-title {
         color: #6C757D;
         font-size: 1rem;
         margin-bottom: 25px;
     }
-
-    /* 둥근 모서리 감성 카드 */
     .traffic-card {
         background-color: #FFFFFF;
         border-radius: 24px;
@@ -44,11 +38,8 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(255, 117, 140, 0.12);
         border: 1px solid #FFE3E8;
         text-align: center;
-        transition: transform 0.2s ease-in-out;
         margin-bottom: 20px;
     }
-    
-    /* 신호등 상태 뱃지 */
     .badge-green {
         background-color: #E6F8F0;
         color: #20C997;
@@ -69,16 +60,11 @@ st.markdown("""
         font-size: 0.95rem;
         margin: 10px 0;
     }
-
-    /* 대형 카운트다운 타이머 */
     .timer-display {
         font-size: 3.5rem;
         font-weight: 900;
         margin: 15px 0;
-        letter-spacing: -1px;
     }
-    
-    /* 사이드바 스타일링 */
     [data-testid="stSidebar"] {
         background-color: #FFFFFF;
         border-right: 1px solid #FFE3E8;
@@ -86,7 +72,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Session State 초기화
+# Session State 초기화
 if "traffics" not in st.session_state:
     st.session_state.traffics = [
         {"id": 1, "name": "🏫 학교 정문 횡단보도", "green_time": 30, "red_time": 90, "offset": 0},
@@ -94,13 +80,12 @@ if "traffics" not in st.session_state:
         {"id": 3, "name": "🚌 사거리 버스정류장 앞", "green_time": 35, "red_time": 85, "offset": 40},
     ]
 
-# 4. 실시간 상태 계산 함수
+# 실시간 상태 계산 함수
 def get_traffic_status(green_time, red_time, offset):
     try:
         total_cycle = green_time + red_time
         now = datetime.datetime.now()
         seconds_today = (now.hour * 3600) + (now.minute * 60) + now.second + offset
-        
         cycle_pos = seconds_today % total_cycle
         
         if cycle_pos < green_time:
@@ -110,7 +95,7 @@ def get_traffic_status(green_time, red_time, offset):
     except Exception:
         return False, 0
 
-# 5. 헤더 구성
+# 헤더 구성
 st.markdown("""
 <div class="main-header">
     <div class="main-title">HeartSync Traffic 🚦</div>
@@ -118,7 +103,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 6. 사이드바 (신호등 추가 및 설정)
+# 사이드바 (신호등 추가 및 설정)
 st.sidebar.title("💖 신호등 관리")
 st.sidebar.caption("학교 주변 신호등 정보를 등록해보세요.")
 
@@ -151,7 +136,7 @@ if st.sidebar.button("목록 초기화"):
     ]
     st.rerun()
 
-# 7. 메인 파스텔 그리드 레이아웃
+# 메인 파스텔 그리드 레이아웃
 cols = st.columns(3)
 
 for idx, t in enumerate(st.session_state.traffics):
@@ -180,4 +165,20 @@ for idx, t in enumerate(st.session_state.traffics):
         """, unsafe_allow_html=True)
         
         # 잔여시간 진행률 바
-        st.progress(
+        st.progress(max(0.0, min(1.0, progress_val)))
+        
+        # 안내 문구
+        if is_green:
+            if rem_time <= 5:
+                st.warning("⚠️ 뛸 경우 위험합니다. 다음 신호를 기다리세요!")
+            else:
+                st.success("🚶 주위를 살피며 안전하게 건너세요.")
+        else:
+            st.info("🛑 안전선 뒤에서 잠시만 기다려주세요.")
+
+st.markdown("<br><hr style='border:0.5px solid #FFE3E8;'><br>", unsafe_allow_html=True)
+st.caption("💕 이미지 UI 스타일 기반으로 제작된 안전 등하교길 실시간 신호등 가이드입니다.")
+
+# 1초 간격 실시간 갱신
+time.sleep(1)
+st.rerun()
