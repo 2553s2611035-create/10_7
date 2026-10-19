@@ -16,11 +16,11 @@ DAYS = ["월", "화", "수", "목", "금", "토", "일"]
 DATA_FILE = "guard_data.json"
 
 DEFAULT_WORKERS = [
-    {"id": "w1", "name": "김민수", "location": "정문 앞 횡단보도", "days": [0, 2, 4], "start": "07:30", "end": "09:00"},
-    {"id": "w2", "name": "이영희", "location": "후문 사거리", "days": [0, 1, 3], "start": "07:30", "end": "09:00"},
-    {"id": "w3", "name": "박철수", "location": "스쿨존 입구", "days": [1, 3, 4], "start": "07:40", "end": "08:50"},
-    {"id": "w4", "name": "최지은", "location": "정문 앞 횡단보도", "days": [1, 2, 3], "start": "07:30", "end": "09:00"},
-    {"id": "w5", "name": "정대호", "location": "버스 정류장 앞", "days": [0, 2, 4], "start": "07:30", "end": "09:00"},
+    {"id": "w1", "name": "김교통", "location": "정문 앞 횡단보도", "days": [0, 2, 4], "start": "07:30", "end": "09:00"},
+    {"id": "w2", "name": "이안전", "location": "후문 사거리", "days": [0, 1, 3], "start": "07:30", "end": "09:00"},
+    {"id": "w3", "name": "박신호", "location": "스쿨존 입구", "days": [1, 3, 4], "start": "07:40", "end": "08:50"},
+    {"id": "w4", "name": "최횡단", "location": "정문 앞 횡단보도", "days": [1, 2, 3], "start": "07:30", "end": "09:00"},
+    {"id": "w5", "name": "정보행", "location": "버스 정류장 앞", "days": [0, 2, 4], "start": "07:30", "end": "09:00"},
 ]
 
 # 상태: (표시 문구, 아이콘, CSS 클래스)
