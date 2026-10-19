@@ -26,7 +26,6 @@ st.markdown("""
         font-weight: 800;
         margin-bottom: 8px;
     }
-    /* 손그림 상단 말풍선/카드 느낌 */
     .info-box {
         background-color: #FFFFFF;
         border-radius: 20px;
@@ -39,8 +38,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
         margin-bottom: 25px;
     }
-    
-    /* 신호등 가로형 카드 디자인 */
     .traffic-row-card {
         background-color: #FFFFFF;
         border-radius: 24px;
@@ -49,8 +46,6 @@ st.markdown("""
         border: 1.5px solid #FFE3E8;
         margin-bottom: 18px;
     }
-    
-    /* 세로형 신호등 그래픽 박스 */
     .light-box {
         background-color: #2D3748;
         border-radius: 18px;
@@ -72,7 +67,6 @@ st.markdown("""
     .light-green { background-color: #20C997; }
     .active { opacity: 1.0; box-shadow: 0 0 10px currentColor; }
 
-    /* 뱃지 스타일 */
     .status-badge {
         padding: 6px 16px;
         border-radius: 16px;
@@ -84,14 +78,11 @@ st.markdown("""
     .badge-green { background-color: #E6F8F0; color: #20C997; border: 1px solid #A3E4D7; }
     .badge-yellow { background-color: #FFF8E7; color: #D97706; border: 1px solid #FDE68A; }
 
-    /* 시간 글자 */
     .timer-text {
         font-size: 2.2rem;
         font-weight: 900;
         margin-top: 5px;
     }
-
-    /* 하단 알림 박스 */
     .footer-alert {
         text-align: center;
         background-color: #FFFFFF;
@@ -106,17 +97,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. 오성고 신호등 데이터 초기 세팅
-if "traffics" not in st.session_state:
-    st.session_state.traffics = [
+# 초기 신호등 설정 함수
+def init_traffics():
+    return [
         {"id": 1, "name": "오성고 정문 사거리", "sub": "(오성고 방면)", "green_t": 30, "yellow_t": 5, "red_t": 85, "offset": 0},
         {"id": 2, "name": "오성고 후문 사거리", "sub": "(시내 방면)", "green_t": 25, "yellow_t": 5, "red_t": 60, "offset": 20},
         {"id": 3, "name": "오성고 근처 사거리", "sub": "(주요 교차로)", "green_t": 35, "yellow_t": 7, "red_t": 78, "offset": 32},
     ]
 
-# 4. 실시간 신호 계산 함수 (초록불 -> 노란불 -> 빨간불)
-def get_traffic_status(green_t, yellow_t, red_t, offset):
+# Session State 초기화 및 기존 구버전 키 체크/업데이트
+if "traffics" not in st.session_state or not isinstance(st.session_state.traffics, list) or "green_t" not in st.session_state.traffics[0]:
+    st.session_state.traffics = init_traffics()
+
+# 4. 실시간 신호 계산 함수 (KeyError 방지 .get 적용)
+def get_traffic_status(t):
     try:
+        green_t = t.get("green_t", 30)
+        yellow_t = t.get("yellow_t", 5)
+        red_t = t.get("red_t", 85)
+        offset = t.get("offset", 0)
+
         total_cycle = green_t + yellow_t + red_t
         now = datetime.datetime.now()
         seconds_today = (now.hour * 3600) + (now.minute * 60) + now.second + offset
@@ -143,10 +143,54 @@ st.markdown("""
 
 # 6. 메인 신호등 리스트 출력
 for t in st.session_state.traffics:
-    status, rem_time = get_traffic_status(t["green_t"], t["yellow_t"], t["red_t"], t["offset"])
+    status, rem_time = get_traffic_status(t)
     
-    # 신호별 클래스 및 컬러 지정
     if status == "초록불":
         badge_cls = "badge-green"
         text_color = "#20C997"
-        red_
+        red_act, yel_act, grn_act = "", "", "active"
+    elif status == "노란불":
+        badge_cls = "badge-yellow"
+        text_color = "#D97706"
+        red_act, yel_act, grn_act = "", "active", ""
+    else: # 빨간불
+        badge_cls = "badge-red"
+        text_color = "#FF477E"
+        red_act, yel_act, grn_act = "active", "", ""
+
+    light_html = f"""
+    <div class="light-box">
+        <div class="light-circle light-red {red_act}"></div>
+        <div class="light-circle light-yellow {yel_act}"></div>
+        <div class="light-circle light-green {grn_act}"></div>
+    </div>
+    """
+
+    st.markdown(f"""
+    <div class="traffic-row-card">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                {light_html}
+                <div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: #2D3748;">{t.get('name', '신호등')}</div>
+                    <div style="font-size: 0.95rem; color: #718096; font-weight: 600;">{t.get('sub', '')}</div>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div class="status-badge {badge_cls}">{status}</div>
+                <div class="timer-text" style="color: {text_color};">{rem_time}초 남음</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# 7. 하단 손그림 알림 문구
+st.markdown("""
+<div class="footer-alert">
+    🔔 신호 변경 알림을 받을 수 있어요!
+</div>
+""", unsafe_allow_html=True)
+
+# 8. 1초 간격 실시간 갱신
+time.sleep(1)
+st.rerun()
