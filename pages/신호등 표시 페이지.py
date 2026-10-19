@@ -2,42 +2,91 @@ import streamlit as st
 import datetime
 import time
 
-# 페이지 기본 설정
+# 1. 페이지 기본 설정
 st.set_page_config(
-    page_title="학교 앞 신호등 카운트다운",
+    page_title="SafeWalk - 학교 앞 신호등",
     page_icon="🚦",
     layout="wide"
 )
 
-# 커스텀 CSS (신호등 디자인 및 스타일링)
+# 2. 이미지 디자인 기반 커스텀 CSS (파스텔 핑크 테마 & 둥근 카드 UI)
 st.markdown("""
 <style>
-    .traffic-card {
-        padding: 20px;
-        border-radius: 15px;
-        background-color: #f8f9fa;
-        border: 2px solid #e9ecef;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    /* 전체 배경 파스텔 톤 지정 */
+    .stApp {
+        background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 100%);
+        font-family: 'Pretendard', sans-serif;
+    }
+    
+    /* 타이틀 및 헤더 스타일링 */
+    .main-header {
         text-align: center;
+        padding: 20px 0 10px 0;
+    }
+    .main-title {
+        color: #FF477E;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+        letter-spacing: -1px;
+    }
+    .sub-title {
+        color: #6C757D;
+        font-size: 1rem;
+        margin-bottom: 25px;
+    }
+
+    /* 둥근 모서리 감성 카드 */
+    .traffic-card {
+        background-color: #FFFFFF;
+        border-radius: 24px;
+        padding: 25px;
+        box-shadow: 0 10px 25px rgba(255, 117, 140, 0.12);
+        border: 1px solid #FFE3E8;
+        text-align: center;
+        transition: transform 0.2s ease-in-out;
         margin-bottom: 20px;
     }
-    .status-green {
-        color: #28a745;
-        font-weight: bold;
-    }
-    .status-red {
-        color: #dc3545;
-        font-weight: bold;
-    }
-    .timer-num {
-        font-size: 3rem;
-        font-weight: 800;
+    
+    /* 신호등 상태 뱃지 */
+    .badge-green {
+        background-color: #E6F8F0;
+        color: #20C997;
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        display: inline-block;
+        font-size: 0.95rem;
         margin: 10px 0;
+    }
+    .badge-red {
+        background-color: #FFE8EC;
+        color: #FF477E;
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        display: inline-block;
+        font-size: 0.95rem;
+        margin: 10px 0;
+    }
+
+    /* 대형 카운트다운 타이머 */
+    .timer-display {
+        font-size: 3.5rem;
+        font-weight: 900;
+        margin: 15px 0;
+        letter-spacing: -1px;
+    }
+    
+    /* 사이드바 스타일링 */
+    [data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+        border-right: 1px solid #FFE3E8;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 초기 신호등 데이터 세팅 (Session State 활용)
+# 3. Session State 초기화
 if "traffics" not in st.session_state:
     st.session_state.traffics = [
         {"id": 1, "name": "🏫 학교 정문 횡단보도", "green_time": 30, "red_time": 90, "offset": 0},
@@ -45,58 +94,56 @@ if "traffics" not in st.session_state:
         {"id": 3, "name": "🚌 사거리 버스정류장 앞", "green_time": 35, "red_time": 85, "offset": 40},
     ]
 
-# 자동 새로고침 (1초마다 갱신)
-# 별도 외부 라이브러리 없이 time.sleep과 rerun 기반 예외 처리로 안정적 구현
-st.title("🚦 학교 주변 신호등 실시간 남은시간 안내")
-st.caption("등하교길 안전을 위한 실시간 보행자 신호등 카운트다운 서비스입니다.")
-
-# 신호등 상태 계산 함수
+# 4. 실시간 상태 계산 함수
 def get_traffic_status(green_time, red_time, offset):
     try:
         total_cycle = green_time + red_time
         now = datetime.datetime.now()
-        # 오늘 기준 지나간 총 초(second) 계산
         seconds_today = (now.hour * 3600) + (now.minute * 60) + now.second + offset
         
         cycle_pos = seconds_today % total_cycle
         
         if cycle_pos < green_time:
-            is_green = True
-            rem_seconds = green_time - cycle_pos
+            return True, int(green_time - cycle_pos)
         else:
-            is_green = False
-            rem_seconds = total_cycle - cycle_pos
-            
-        return is_green, int(rem_seconds)
-    except Exception as e:
+            return False, int(total_cycle - cycle_pos)
+    except Exception:
         return False, 0
 
-# --- 사이드바: 신호등 추가 및 관리 ---
-st.sidebar.header("⚙️ 신호등 추가/설정")
+# 5. 헤더 구성
+st.markdown("""
+<div class="main-header">
+    <div class="main-title">HeartSync Traffic 🚦</div>
+    <div class="sub-title">학교 주변 신호등의 보행자 잔여 시간을 실시간으로 확인하세요!</div>
+</div>
+""", unsafe_allow_html=True)
 
-with st.sidebar.form("add_traffic_form"):
+# 6. 사이드바 (신호등 추가 및 설정)
+st.sidebar.title("💖 신호등 관리")
+st.sidebar.caption("학교 주변 신호등 정보를 등록해보세요.")
+
+with st.sidebar.form("add_form"):
     st.subheader("신규 신호등 등록")
-    new_name = st.text_input("위치/이름", placeholder="예: 체육관 앞 횡단보도")
-    new_green = st.number_input("초록불 유지시간 (초)", min_value=10, max_value=120, value=30)
-    new_red = st.number_input("빨간불 유지시간 (초)", min_value=10, max_value=300, value=90)
+    name = st.text_input("위치 명칭", placeholder="예: 체육관 앞 횡단보도")
+    green = st.number_input("초록불 유지시간(초)", min_value=10, max_value=120, value=30)
+    red = st.number_input("빨간불 유지시간(초)", min_value=10, max_value=300, value=90)
     
-    submitted = st.form_submit_button("신호등 추가")
-    if submitted:
-        if new_name.strip():
+    if st.form_submit_button("신호등 추가하기"):
+        if name.strip():
             new_id = len(st.session_state.traffics) + 1
             st.session_state.traffics.append({
                 "id": new_id,
-                "name": new_name,
-                "green_time": new_green,
-                "red_time": new_red,
+                "name": name,
+                "green_time": green,
+                "red_time": red,
                 "offset": 0
             })
-            st.sidebar.success(f"'{new_name}' 신호등이 추가되었습니다!")
+            st.sidebar.success(f"'{name}' 추가 완료!")
             st.rerun()
         else:
-            st.sidebar.error("신호등 이름을 입력해주세요.")
+            st.sidebar.error("명칭을 입력해 주세요.")
 
-if st.sidebar.button("기초 데이터 초기화"):
+if st.sidebar.button("목록 초기화"):
     st.session_state.traffics = [
         {"id": 1, "name": "🏫 학교 정문 횡단보도", "green_time": 30, "red_time": 90, "offset": 0},
         {"id": 2, "name": "🏃 후문 스쿨존 횡단보도", "green_time": 25, "red_time": 65, "offset": 15},
@@ -104,7 +151,7 @@ if st.sidebar.button("기초 데이터 초기화"):
     ]
     st.rerun()
 
-# --- 메인 영역: 신호등 카운트다운 출력 ---
+# 7. 메인 파스텔 그리드 레이아웃
 cols = st.columns(3)
 
 for idx, t in enumerate(st.session_state.traffics):
@@ -112,43 +159,25 @@ for idx, t in enumerate(st.session_state.traffics):
     is_green, rem_time = get_traffic_status(t["green_time"], t["red_time"], t["offset"])
     
     with col:
-        with st.container():
-            if is_green:
-                color_code = "#28a745"
-                status_icon = "🟢"
-                status_text = "보행 가능 (초록불)"
-                progress = rem_time / t["green_time"]
-            else:
-                color_code = "#dc3545"
-                status_icon = "🔴"
-                status_text = "대기 (빨간불)"
-                progress = rem_time / t["red_time"]
+        if is_green:
+            badge_class = "badge-green"
+            status_text = "🟢 건너도 좋아요"
+            timer_color = "#20C997"
+            progress_val = rem_time / t["green_time"]
+        else:
+            badge_class = "badge-red"
+            status_text = "🔴 멈춰서 기다려요"
+            timer_color = "#FF477E"
+            progress_val = rem_time / t["red_time"]
 
-            st.markdown(f"""
-            <div class="traffic-card">
-                <h3>{t['name']}</h3>
-                <h2 class="{'status-green' if is_green else 'status-red'}">
-                    {status_icon} {status_text}
-                </h2>
-                <div class="timer-num" style="color: {color_code};">{rem_time}초</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # 남은 시간 진행 바
-            st.progress(max(0.0, min(1.0, progress)))
-            
-            # 안전 메시지
-            if is_green:
-                if rem_time <= 5:
-                    st.warning("⚠️ 5초 이하! 뛸 경우 위험하니 다음 신호를 기다리세요.")
-                else:
-                    st.info("🚶 안전하게 건너세요.")
-            else:
-                st.write("🛑 인도 안쪽 안전선 뒤에서 대기하세요.")
-
-st.markdown("---")
-st.caption("ℹ️ 본 서비스의 신호등 주기는 설정된 신호 타이밍 알고리즘에 따른 시뮬레이션 결과입니다.")
-
-# 1초 후 자동 리프레시 (Streamlit 안정 구동 방식)
-time.sleep(1)
-st.rerun()
+        # 둥근 카드 표현
+        st.markdown(f"""
+        <div class="traffic-card">
+            <h3 style="color:#2D3748; font-size:1.2rem; font-weight:700;">{t['name']}</h3>
+            <div class="{badge_class}">{status_text}</div>
+            <div class="timer-display" style="color: {timer_color};">{rem_time}<span style="font-size:1.5rem;">초</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 잔여시간 진행률 바
+        st.progress(
