@@ -4,7 +4,7 @@ import folium
 from streamlit_folium import st_folium
 import datetime
 
-# 1. 페이지 설정
+# 1. 페이지 기본 설정
 st.set_page_config(
     page_title="천안오성고등학교 길 안내도",
     page_icon="🏫",
@@ -64,18 +64,18 @@ with col3:
 
 st.divider()
 
-# 4. 이미지 속 그려주신 동선 경로 반영 (Folium)
+# 4. 지도 시각화 (학교 동측 도로를 따르는 얇은 선 반영)
 st.subheader("🗺️ 천안오성고등학교 동측 도로 분리 안내")
 st.markdown("학교 동쪽 진입 도로를 따라 **학생 전용 보행로(파란색)**와 **외부인/차량 진입로(빨간색)**를 나란히 표시합니다.")
 
-# 천안오성고등학교 정확한 지도 중심 좌표
+# 천안오성고 지도 중심 좌표
 osung_lat = 36.8415
 osung_lng = 127.1422
 
-# 지도 생성 (확대 레벨 18)
+# Folium 지도 생성
 m = folium.Map(location=[osung_lat, osung_lng], zoom_start=18, tiles="OpenStreetMap")
 
-# 🔵 학생 전용 보행로 (학교쪽 안쪽 도로 라인 - 파란색)
+# 🔵 학생 전용 보행로 (안쪽 도로 라인)
 student_path = [
     [36.8423, 127.1428],
     [36.8418, 127.1429],
@@ -84,7 +84,7 @@ student_path = [
     [36.8400, 127.1433]
 ]
 
-# 🔴 외부인 및 차량 진입로 (바깥쪽 도로 라인 - 빨간색)
+# 🔴 외부인 및 차량 진입로 (바깥쪽 도로 라인)
 visitor_path = [
     [36.8423, 127.1430],
     [36.8418, 127.1431],
@@ -93,7 +93,7 @@ visitor_path = [
     [36.8400, 127.1435]
 ]
 
-# 얇은 파란색 실선 (학생 전용)
+# 얇은 파란색 실선
 folium.PolyLine(
     locations=student_path,
     color="#2563EB",
@@ -102,7 +102,7 @@ folium.PolyLine(
     tooltip="🔵 학생 전용 보행로"
 ).add_to(m)
 
-# 얇은 빨간색 실선 (외부인 전용)
+# 얇은 빨간색 실선
 folium.PolyLine(
     locations=visitor_path,
     color="#DC2626",
@@ -111,7 +111,7 @@ folium.PolyLine(
     tooltip="🔴 외부인/차량 진입로"
 ).add_to(m)
 
-# 천안오성고등학교 위치 마커
+# 천안오성고등학교 마커
 folium.Marker(
     location=[osung_lat, osung_lng],
     popup="<b>천안오성고등학교</b>",
@@ -119,7 +119,7 @@ folium.Marker(
     icon=folium.Icon(color="blue", icon="school", prefix="fa")
 ).add_to(m)
 
-# 지도 시각화
+# 지도 출력
 st_folium(m, width=900, height=480)
 
 # 범례 안내
@@ -149,4 +149,12 @@ with rule_col1:
     st.markdown("""
     ### 🔵 학생 보행 수칙
     1. **파란색 선 경로(안쪽 도로)**를 따라서 등교해 주세요.
-    2. 혼잡한 피크 타임(08:00~08
+    2. 혼잡한 피크 타임(08:00~08:30)에는 일렬 우측통행을 준수합니다.
+    """)
+
+with rule_col2:
+    st.markdown("""
+    ### 🔴 외부인 및 차량 이용 수칙
+    1. **빨간색 선 경로(바깥쪽 도로)**를 통해 서행 진입해 주세요.
+    2. 승하차 후 즉시 이동하여 통학로가 정체되지 않도록 유의해 주세요.
+    """)
