@@ -25,12 +25,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. 목적지 및 데이터베이스 정의 (천안오성고등학교 정확히 지정)
+# 2. 목적지 및 데이터베이스 정의
 # ---------------------------------------------------------
 DEST_NAME = "천안오성고등학교"
-DEST_COORDS = (36.8378, 127.1352) # 천안오성고 정확한 위치 좌표
+DEST_COORDS = (36.8378, 127.1352)
 
-# 주요 출발지 옵션
 LOCATIONS = {
     "천안역 (동부광장)": (36.8090, 127.1462),
     "천안종합버스터미널 (신부동)": (36.8198, 127.1557),
@@ -41,7 +40,6 @@ LOCATIONS = {
     "직접 주소 입력": None
 }
 
-# 천안 시내버스 데이터베이스 (오성고 연계 노선)
 BUS_ROUTES_DB = {
     "천안역 (동부광장)": [
         {
@@ -162,7 +160,7 @@ BUS_ROUTES_DB = {
 @st.cache_data(show_spinner=False)
 def get_coords_from_address(address_str):
     try:
-        geolocator = Nominatim(user_agent="cheonan_ohseong_bus_app_v2")
+        geolocator = Nominatim(user_agent="cheonan_ohseong_bus_app_v3")
         location = geolocator.geocode(address_str, timeout=5)
         if location:
             return (location.latitude, location.longitude)
@@ -188,15 +186,12 @@ st.caption("현재 위치에서 천안오성고등학교까지 이동하는 다�
 st.markdown("---")
 
 # ---------------------------------------------------------
-# 5. 메인 분할 레이아웃 (좌: 지도 / 우: 컨트롤 패널)
+# 5. 메인 분할 레이아웃
 # ---------------------------------------------------------
 col_left, col_right = st.columns([1.4, 1.0], gap="medium")
 
-# =========================================================
-# 오른쪽 영역: 현재 위치 선택 및 노선 정보
-# =========================================================
+# 오른쪽 영역
 with col_right:
-    # 1. 맨 위: 현재 위치 설정
     st.subheader("📍 1. 현재 위치 설정")
     
     selected_location_key = st.selectbox(
@@ -219,13 +214,11 @@ with col_right:
     else:
         current_coords = LOCATIONS[selected_location_key]
 
-    # 목적지 안내
     straight_dist = calc_haversine_distance(current_coords, DEST_COORDS)
     st.info(f"🏫 **목적지**: {DEST_NAME} (충남 천안시 서북구 오성로 63 / 직선거리: 약 {straight_dist:.2f}km)")
 
     st.markdown("---")
 
-    # 2. 버스 노선 검색 및 시간 계산
     st.subheader("🚌 2. 추천 버스 노선 및 예상 시간")
 
     if selected_location_key in BUS_ROUTES_DB:
@@ -246,4 +239,67 @@ with col_right:
             }
         ]
 
-    st.markdown(f"총 **{len(
+    st.markdown(f"총 **{len(routes_list)}개**의 이동 경로가 검색되었습니다.")
+
+    for idx, r in enumerate(routes_list, 1):
+        with st.expander(f"📌 **[{r['type']}] {r['bus_no']}** (소요: 약 {r['time_min']}분)", expanded=(idx == 1)):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown(f"⏱️ **예상 소요시간**: :orange[{r['time_min']}분]")
+                st.markdown(f"🚌 **배차 간격**: {r['interval_min']}분" if r['interval_min'] > 0 else "🚶 **도보 이동**")
+            with c2:
+                st.markdown(f"💳 **일반 요금**: {r['fare_adult']:,}원")
+                st.markdown(f"🎒 **학생 할인**: {r['fare_student']:,}원")
+
+            st.markdown("**🏁 주요 경유 정류장:**")
+            st.caption(" ➔ ".join(r["stops"]))
+
+            if r['interval_min'] > 0:
+                rem_sec = (r['interval_min'] * 60) - (int(time.time()) % (r['interval_min'] * 60))
+                rem_min = rem_sec // 60
+                rem_sec_curr = rem_sec % 60
+                st.progress(1.0 - (rem_sec / (r['interval_min'] * 60)))
+                st.caption(f"⏳ 다음 버스 도착 예정: **약 {rem_min}분 {rem_sec_curr}초 후**")
+
+# 왼쪽 영역
+with col_left:
+    st.subheader("🗺️ 버스 노선 및 지도")
+
+    mid_lat = (current_coords[0] + DEST_COORDS[0]) / 2
+    mid_lon = (current_coords[1] + DEST_COORDS[1]) / 2
+
+    m = folium.Map(
+        location=[mid_lat, mid_lon],
+        zoom_start=13,
+        tiles="OpenStreetMap"
+    )
+
+    folium.Marker(
+        location=current_coords,
+        popup=f"<b>출발지</b><br>{selected_location_key}",
+        tooltip="📍 현재 위치 (출발)",
+        icon=folium.Icon(color="red", icon="user", prefix="fa")
+    ).add_to(m)
+
+    folium.Marker(
+        location=DEST_COORDS,
+        popup=f"<b>{DEST_NAME}</b><br>충남 천안시 서북구 오성로 63",
+        tooltip=f"🏫 {DEST_NAME} (도착)",
+        icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa")
+    ).add_to(m)
+
+    for r in routes_list:
+        path_coords = r["path"]
+        if selected_location_key == "직접 주소 입력":
+            path_coords = [current_coords, DEST_COORDS]
+
+        folium.PolyLine(
+            locations=path_coords,
+            color=r["color"],
+            weight=6,
+            opacity=0.8,
+            popup=f"<b>{r['bus_no']}</b> ({r['time_min']}분 소요)",
+            tooltip=f"{r['bus_no']} 노선"
+        ).add_to(m)
+
+    st_folium(m, width="100%", height=620, returned_objects=[])
