@@ -25,11 +25,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. 목적지 및 데이터베이스 정의
+# 2. 목적지 및 데이터베이스 정의 (천안오성고등학교 고정)
 # ---------------------------------------------------------
 DEST_NAME = "천안오성고등학교"
-DEST_COORDS = (36.8378, 127.1352)
+DEST_ADDRESS = "충남 천안시 서북구 오성로 63"
+DEST_COORDS = (36.8378, 127.1352)  # 천안오성고 정확한 위도/경도 좌표
 
+# 주요 출발지 옵션
 LOCATIONS = {
     "천안역 (동부광장)": (36.8090, 127.1462),
     "천안종합버스터미널 (신부동)": (36.8198, 127.1557),
@@ -40,6 +42,7 @@ LOCATIONS = {
     "직접 주소 입력": None
 }
 
+# 천안 시내버스 데이터베이스 (천안오성고등학교 연계 노선)
 BUS_ROUTES_DB = {
     "천안역 (동부광장)": [
         {
@@ -157,10 +160,9 @@ BUS_ROUTES_DB = {
 # ---------------------------------------------------------
 # 3. 유틸리티 함수
 # ---------------------------------------------------------
-@st.cache_data(show_spinner=False)
 def get_coords_from_address(address_str):
     try:
-        geolocator = Nominatim(user_agent="cheonan_ohseong_bus_app_v3")
+        geolocator = Nominatim(user_agent="cheonan_ohseong_highschool_app_v4")
         location = geolocator.geocode(address_str, timeout=5)
         if location:
             return (location.latitude, location.longitude)
@@ -186,11 +188,13 @@ st.caption("현재 위치에서 천안오성고등학교까지 이동하는 다�
 st.markdown("---")
 
 # ---------------------------------------------------------
-# 5. 메인 분할 레이아웃
+# 5. 메인 분할 레이아웃 (좌: 지도 / 우: 노선 안내)
 # ---------------------------------------------------------
 col_left, col_right = st.columns([1.4, 1.0], gap="medium")
 
-# 오른쪽 영역
+# =========================================================
+# 오른쪽 영역: 현재 위치 설정 및 버스 노선
+# =========================================================
 with col_right:
     st.subheader("📍 1. 현재 위치 설정")
     
@@ -207,15 +211,17 @@ with col_right:
             coords = get_coords_from_address(user_addr)
             if coords:
                 current_coords = coords
-                st.success("✅ 입력한 주소 위치를 성공적으로 찾았습니다!")
+                st.success("✅ 입력한 주소 위치를 찾아 연결했습니다.")
             else:
-                st.warning("⚠️ 주소를 찾을 수 없어 기본 위치(천안역)로 연결됩니다.")
+                st.warning("⚠️ 주소를 찾을 수 없어 기본 위치(천안역)로 설정됩니다.")
                 current_coords = LOCATIONS["천안역 (동부광장)"]
     else:
         current_coords = LOCATIONS[selected_location_key]
 
     straight_dist = calc_haversine_distance(current_coords, DEST_COORDS)
-    st.info(f"🏫 **목적지**: {DEST_NAME} (충남 천안시 서북구 오성로 63 / 직선거리: 약 {straight_dist:.2f}km)")
+    
+    # 도착지 정보 명확히 표시
+    st.info(f"🏫 **목적지**: {DEST_NAME}\n\n📍 **주소**: {DEST_ADDRESS}\n\n📏 **직선거리**: 약 {straight_dist:.2f}km")
 
     st.markdown("---")
 
@@ -261,7 +267,9 @@ with col_right:
                 st.progress(1.0 - (rem_sec / (r['interval_min'] * 60)))
                 st.caption(f"⏳ 다음 버스 도착 예정: **약 {rem_min}분 {rem_sec_curr}초 후**")
 
-# 왼쪽 영역
+# =========================================================
+# 왼쪽 영역: 지도 시각화
+# =========================================================
 with col_left:
     st.subheader("🗺️ 버스 노선 및 지도")
 
@@ -274,6 +282,7 @@ with col_left:
         tiles="OpenStreetMap"
     )
 
+    # 출발지 마커
     folium.Marker(
         location=current_coords,
         popup=f"<b>출발지</b><br>{selected_location_key}",
@@ -281,13 +290,15 @@ with col_left:
         icon=folium.Icon(color="red", icon="user", prefix="fa")
     ).add_to(m)
 
+    # 도착지 마커 (천안오성고등학교 정확히 지정)
     folium.Marker(
         location=DEST_COORDS,
-        popup=f"<b>{DEST_NAME}</b><br>충남 천안시 서북구 오성로 63",
+        popup=f"<b>{DEST_NAME}</b><br>{DEST_ADDRESS}",
         tooltip=f"🏫 {DEST_NAME} (도착)",
         icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa")
     ).add_to(m)
 
+    # 경로 표시
     for r in routes_list:
         path_coords = r["path"]
         if selected_location_key == "직접 주소 입력":
