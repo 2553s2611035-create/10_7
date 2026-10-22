@@ -304,3 +304,7 @@ with col_left:
             weight=6,
             opacity=0.8,
             popup=f"<b>{r['bus_no']}</b> ({r['time_min']}분 소요)",
+            tooltip=f"{r['bus_no']} 노선"
+        ).add_to(m)
+
+    st_folium(m, width="100%", height=620, returned_objects=[])
