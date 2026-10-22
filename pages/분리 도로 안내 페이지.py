@@ -65,59 +65,59 @@ with col3:
 
 st.divider()
 
-# 4. 천안 오성고등학교 지도 및 도로 따라 그리기 (Folium)
-st.subheader("🗺️ 학교 주변 실제 도로망 및 분리 경로 안내")
-st.markdown("실제 도로를 따라 **학생 보행로(파란색)**와 **외부인/차량 진입로(빨간색)**를 얇고 명확하게 나타냅니다.")
+# 4. 천안오성고등학교 실제 위치 지도 및 정교한 얇은 선 라인 표시
+st.subheader("🗺️ 천안오성고등학교 통학로 분리 안내")
+st.markdown("실제 학교 진입 도로를 따라 **학생 전용 보행로(파란색)**와 **외부인/차량 진입로(빨간색)**를 얇은 선으로 정교하게 안내합니다.")
 
-# 천안오성고등학교 정확한 좌표
-osung_lat = 36.8378
-osung_lng = 127.1352
+# 천안오성고등학교 정확한 정문/학교 좌표
+osung_lat = 36.8335
+osung_lng = 127.1308
 
-# 지도 생성 (확대 레벨 17.5 지정)
-m = folium.Map(location=[osung_lat, osung_lng], zoom_start=17, tiles="OpenStreetMap")
+# 지도 생성 (확대 레벨 18)
+m = folium.Map(location=[osung_lat, osung_lng], zoom_start=18, tiles="OpenStreetMap")
 
-# 🔵 학생 전용 경로 (도로 및 보행로 라인을 정밀하게 매핑)
+# 🔵 학생 전용 보행로 좌표 (도로 따라 얇게 배치)
 student_path = [
-    [36.8360, 127.1358],
-    [36.8367, 127.1356],
-    [36.8372, 127.1354],
-    [36.8376, 127.1351],
-    [36.8378, 127.1348]
+    [36.8322, 127.1300],
+    [36.8326, 127.1303],
+    [36.8330, 127.1306],
+    [36.8333, 127.1307],
+    [36.8335, 127.1308]
 ]
 
-# 🔴 외부인/차량 전용 경로 (진입 도로 라인을 정밀하게 매핑)
+# 🔴 외부인 및 차량 진입로 좌표 (우회 도로 따라 얇게 배치)
 visitor_path = [
-    [36.8360, 127.1363],
-    [36.8366, 127.1362],
-    [36.8371, 127.1360],
-    [36.8375, 127.1357],
-    [36.8377, 127.1355]
+    [36.8320, 127.1312],
+    [36.8324, 127.1311],
+    [36.8328, 127.1310],
+    [36.8332, 127.1309],
+    [36.8335, 127.1308]
 ]
 
-# 얇은 파란색 (학생 전용) 선
+# 얇은 파란색 (학생 전용) 실선
 folium.PolyLine(
     locations=student_path,
     color="#2563EB",
-    weight=3.5,
+    weight=2.5,  # 더욱 얇아진 선 굵기
     opacity=0.9,
     tooltip="🔵 학생 전용 보행로"
 ).add_to(m)
 
-# 얇은 빨간색 (외부인 전용) 선
+# 얇은 빨간색 (외부인 전용) 실선
 folium.PolyLine(
     locations=visitor_path,
     color="#DC2626",
-    weight=3.5,
+    weight=2.5,  # 더욱 얇아진 선 굵기
     opacity=0.9,
-    tooltip="🔴 외부인 및 차량 진입로"
+    tooltip="🔴 외부인/차량 전용 도로"
 ).add_to(m)
 
-# 학교 위치 마커
+# 천안오성고등학교 정문 위치 마커
 folium.Marker(
     location=[osung_lat, osung_lng],
-    popup="<b>천안오성고등학교</b>",
+    popup="<b>천안오성고등학교 정문</b>",
     tooltip="천안오성고등학교",
-    icon=folium.Icon(color="green", icon="school", prefix="fa")
+    icon=folium.Icon(color="blue", icon="school", prefix="fa")
 ).add_to(m)
 
 # 지도 출력
@@ -126,13 +126,13 @@ st_folium(m, width=900, height=480)
 # 범례 안내
 col_legend1, col_legend2 = st.columns(2)
 with col_legend1:
-    st.info("🔵 **학생 전용 도로**: 보행 안전 통학로 (얇은 파란색 선 표시)")
+    st.info("🔵 **학생 전용 도로**: 얇은 파란색 선을 따른 보행 전용 안전 통학로")
 with col_legend2:
-    st.error("🔴 **외부인 전용 도로**: 차량 하차 및 방문자 도로 (얇은 빨간색 선 표시)")
+    st.error("🔴 **외부인 전용 도로**: 얇은 빨간색 선을 따른 차량 및 방문객 전용 도로")
 
 st.divider()
 
-# 5. 시간대별 혼잡도 추이 그래프
+# 5. 아침 등교 시간대별 혼잡도 그래프
 st.subheader("📊 아침 등교 시간대별 혼잡도 추이")
 
 df_congestion = pd.DataFrame({
@@ -142,20 +142,20 @@ df_congestion = pd.DataFrame({
 
 st.line_chart(df_congestion.set_index("시간"))
 
-# 6. 안전 수칙
-st.subheader("📌 오성고 통학로 이용 안전 수칙")
+# 6. 이용 안내 수칙
+st.subheader("📌 오성고 등교길 안전 수칙")
 rule_col1, rule_col2 = st.columns(2)
 
 with rule_col1:
     st.markdown("""
     ### 🔵 학생 보행 수칙
-    1. **파란색 선 보행로**를 따라서 정문으로 등교합니다.
-    2. 피크 타임(08:00~08:30)에는 일렬로 우측통행합니다.
+    1. **파란색 얇은 선**으로 표시된 전용 보행로를 이용해 등교합니다.
+    2. 혼잡한 아침 등교 시간에는 일렬로 우측통행합니다.
     """)
 
 with rule_col2:
     st.markdown("""
     ### 🔴 외부인 및 차량 이용 수칙
-    1. **빨간색 선 도로**를 이용하여 진입 및 서행합니다.
-    2. 학생 승하차는 정문 인근 하차 구역에서 신속히 진행합니다.
+    1. **빨간색 얇은 선**으로 표시된 도로를 통해 서행 진입합니다.
+    2. 학생 승하차는 정문 앞 승하차 구역에서 신속하게 진행합니다.
     """)
